@@ -11,10 +11,9 @@ def find_page(page)
   character_hash = JSON.parse(page_characters)
 end
 
-def find_character_films(character)
+def find_character(character)
   page = 1
-  films = nil
-
+  found_character = nil
   character_hash = find_page(page)
 
   while character_hash["next"] != nil
@@ -23,13 +22,18 @@ def find_character_films(character)
 
     characters.each do |char|
       if char["name"].downcase.include?(character)
-        films = char["films"]
         character_hash["next"] = nil
+        found_character = char
       end
     end
     page += 1
   end
- films
+  found_character
+end
+
+def find_character_films(character)
+  # binding.pry
+  find_character(character)["films"]
 end
 
 
@@ -55,6 +59,14 @@ def show_character_movies(character)
   films_hash = get_character_movies_from_api(character)
   parse_character_movies(films_hash)
 end
+
+def eye_color(character)
+  # binding.pry
+  find_character(character)["eye_color"]
+  # result.colorize(:'#{result}')
+end
+
+# Pry.start
 
 
 
