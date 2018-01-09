@@ -1,55 +1,59 @@
 require 'rest-client'
 require 'json'
 require 'pry'
+require 'colorize'
 require_relative "../lib/command_line_interface.rb"
 
-def get_character_movies_from_api(character)
-  #make the web request
-  all_characters = RestClient.get('http://www.swapi.co/api/people/')
-  character_hash = JSON.parse(all_characters)
 
-  characters = character_hash["results"]
 
-  films = nil
-
-  characters.each do |char|
-    if char["name"] == character
-      films = char["films"]
-    end
-  end
-
-if films
-  char_films = films.collect do |film|
-    all_films = RestClient.get(film)
-    film_hash = JSON.parse(all_films)
-  end
+def find_page(page)
+  page_characters = RestClient.get("http://www.swapi.co/api/people/?page=#{page}")
+  character_hash = JSON.parse(page_characters)
 end
 
-  # iterate over the character hash to find the collection of `films` for the given
-  #   `character`
-  # collect those film API urls, make a web request to each URL to get the info
-  #  for that film
-  # return value of this method should be collection of info about each film.
-  #  i.e. an array of hashes in which each hash reps a given film
-  # this collection will be the argument given to `parse_character_movies`
-  #  and that method will do some nice presentation stuff: puts out a list
-  #  of movies by title. play around with puts out other info about a given film.
+def find_character_films(character)
+  page = 1
+  films = nil
+
+  character_hash = find_page(page)
+
+  while character_hash["next"] != nil
+    character_hash = find_page(page)
+    characters = character_hash["results"]
+
+    characters.each do |char|
+      if char["name"].downcase.include?(character)
+        films = char["films"]
+        character_hash["next"] = nil
+      end
+    end
+    page += 1
+  end
+ films
+end
+
+
+def get_character_movies_from_api(character)
+    films = find_character_films(character)
+    if films
+      char_films = films.collect do |film|
+        all_films = RestClient.get(film)
+        film_hash = JSON.parse(all_films)
+      end
+    end
 end
 
 
 
 def parse_character_movies(films_hash)
   films_hash.each_with_index do |film, idx|
-    puts " #{idx + 1}. #{film["title"]}\n Director: #{film["director"]}\n Release Date: #{film["release_date"]}"
+    puts " #{idx + 1}.".colorize(:blue) + " #{film["title"]}\n".colorize(:red) + "\t Director: #{film["director"]}\n" + "\t Release Date: #{film["release_date"]}"
   end
-
-  # some iteration magic and puts out the movies in a nice list
 end
 
 def show_character_movies(character)
   films_hash = get_character_movies_from_api(character)
   parse_character_movies(films_hash)
-
 end
 
 
